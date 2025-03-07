@@ -1,16 +1,17 @@
 import tkinter as tk
+from tkinter import messagebox
 
 class TicketBookingApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Flight Ticket Booking System")
-        self.root.geometry("600x600")  # Set the window size
-        self.root.configure(bg="black")  # Set the background color of the root window to black
+        self.root.geometry("600x600")
+        self.root.configure(bg="black")
         self.queue = []
         self.max_seats = 10
 
         # Labels
-        labels = ["Name", "Age", "Mobile Number", "Source", "Destination", "Priority", "Number of Tickets"]
+        labels = ["Name", "Age", "Mobile Number", "Source", "Destination"]
         self.entry_widgets = {}
 
         for label_text in labels:
@@ -41,10 +42,10 @@ class TicketBookingApp:
         self.tickets_entry.pack()
 
         # Buttons
-        self.add_button = tk.Button(root, text="Add Customer", command=self.add_customer, bg="black", fg="white")
+        self.add_button = tk.Button(root, text="Add Customer", command=self.add_customer, bg="blue", fg="white")
         self.add_button.pack()
 
-        self.book_button = tk.Button(root, text="Book Ticket", command=self.book_ticket, bg="black", fg="white")
+        self.book_button = tk.Button(root, text="Book Ticket", command=self.book_ticket, bg="green", fg="white")
         self.book_button.pack()
 
         # Messages
@@ -67,49 +68,62 @@ class TicketBookingApp:
         priority = self.priority_var.get()
         num_tickets = self.tickets_var.get()
 
-        if name and age and mobile and source and destination and num_tickets > 0:
-            if len(self.queue) + num_tickets > self.max_seats:
-                self.message_label.config(text="Not enough seats available.")
-            else:
-                if priority == "Senior":
-                    priority_value = 1
-                elif priority == "Army":
-                    priority_value = 2
-                elif priority == "Student":
-                    priority_value = 3
-                else:
-                    priority_value = 4
+        if not all([name, age, mobile, source, destination, num_tickets]):
+            messagebox.showerror("Error", "Please fill in all fields and select the number of tickets.")
+            return
 
-                for _ in range(num_tickets):
-                    customer = {
-                        'name': name,
-                        'age': age,
-                        'mobile': mobile,
-                        'source': source,
-                        'destination': destination,
-                        'priority': priority_value
-                    }
-                    self.queue.append(customer)
-                self.message_label.config(text=f"{num_tickets} ticket(s) for {name} added to the queue.")
-                self.update_seats_label()
+        try:
+            age = int(age)
+            num_tickets = int(num_tickets)
+        except ValueError:
+            messagebox.showerror("Error", "Age and number of tickets must be integers.")
+            return
+
+        if num_tickets <= 0:
+            messagebox.showerror("Error", "Number of tickets must be greater than zero.")
+            return
+
+        if len(self.queue) + num_tickets > self.max_seats:
+            messagebox.showerror("Error", "Not enough seats available.")
+            return
+
+        if priority == "Senior":
+            priority_value = 1
+        elif priority == "Army":
+            priority_value = 2
+        elif priority == "Student":
+            priority_value = 3
         else:
-            self.message_label.config(text="Please fill in all fields and select the number of tickets.")
+            priority_value = 4
+
+        for _ in range(num_tickets):
+            customer = {
+                'name': name,
+                'age': age,
+                'mobile': mobile,
+                'source': source,
+                'destination': destination,
+                'priority': priority_value
+            }
+            self.queue.append(customer)
+        self.message_label.config(text=f"{num_tickets} ticket(s) for {name} added to the queue.")
+        self.update_seats_label()
 
     def book_ticket(self):
         if not self.queue:
-            self.message_label.config(text="No customers in the queue.")
-        else:
-            # Sort the queue based on priority (lower value means higher priority)
-            self.queue.sort(key=lambda x: x['priority'])
-            if len(self.queue) > self.max_seats:
-                self.queue = self.queue[:self.max_seats]  # Truncate the queue to the maximum limit
-            booked_customers = [f"Name: {customer['name']}, Age: {customer['age']}, Source: {customer['source']}, Destination: {customer['destination']}, Priority: {customer['priority']}" for customer in self.queue]
-            self.message_label.config(text="Booked Tickets:\n" + "\n\n".join(booked_customers))
-            self.update_seats_label()
+            messagebox.showinfo("Info", "No customers in the queue.")
+            return
 
-            # Display selected priority
-            selected_priority = self.priority_var.get()
-            self.selected_priority_label.config(text=f"Selected Priority: {selected_priority}")
+        self.queue.sort(key=lambda x: x['priority'])
+        if len(self.queue) > self.max_seats:
+            self.queue = self.queue[:self.max_seats]
+
+        booked_customers = [f"Name: {customer['name']}, Age: {customer['age']}, Source: {customer['source']}, Destination: {customer['destination']}, Priority: {customer['priority']}" for customer in self.queue]
+        self.message_label.config(text="Booked Tickets:\n" + "\n\n".join(booked_customers))
+        self.update_seats_label()
+
+        selected_priority = self.priority_var.get()
+        self.selected_priority_label.config(text=f"Selected Priority: {selected_priority}")
 
     def update_seats_label(self):
         seats_left = self.max_seats - len(self.queue)
